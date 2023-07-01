@@ -26,6 +26,9 @@ const (
 type Transport struct {
 	Conn *nats.Conn
 
+	PendingMsgsLimit  int
+	PendingBytesLimit int
+
 	maxMsgSize int
 }
 
@@ -51,6 +54,14 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		t.maxMsgSize = int(t.Conn.MaxPayload())
 	}
 
+	if t.PendingMsgsLimit == 0 {
+		t.PendingMsgsLimit = nats.DefaultSubPendingMsgsLimit
+	}
+
+	if t.PendingBytesLimit == 0 {
+		t.PendingBytesLimit = nats.DefaultSubPendingBytesLimit
+	}
+
 	// create response
 	resp = &http.Response{
 		Request: req,
@@ -59,6 +70,12 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	// create a new inbox and subscribe to it
 	inbox := t.Conn.NewRespInbox()
 	sub, err := t.Conn.SubscribeSync(inbox)
+
+	// adjust the pending limits for slow consumer detection
+	if err = sub.SetPendingLimits(t.PendingMsgsLimit, t.PendingBytesLimit); err != nil {
+		return nil, err
+	}
+
 	// todo handle cleanup of subscription in case of error properly
 	if err != nil {
 		return nil, err
