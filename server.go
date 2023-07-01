@@ -21,9 +21,12 @@ type Server struct {
 	Conn    *nats.Conn
 	Subject string
 	Group   string
-	Handler http.Handler
 
+	Handler      http.Handler
 	ErrorHandler func(error)
+
+	PendingMsgsLimit  int
+	PendingBytesLimit int
 
 	sub        *nats.Subscription
 	maxMsgSize int
@@ -46,6 +49,15 @@ func (s *Server) Listen(ctx context.Context) error {
 		s.ErrorHandler = NoOpErrorHandler
 	}
 
+	if s.PendingMsgsLimit == 0 {
+		s.PendingMsgsLimit = nats.DefaultSubPendingMsgsLimit
+	}
+
+	if s.PendingBytesLimit == 0 {
+		// default to 10 Gb of pending bytes as we may be handling a lot of uploads in high load scenarios
+		s.PendingBytesLimit = 1024 * 1024 * 1024
+	}
+
 	var err error
 	var sub *nats.Subscription
 
@@ -53,6 +65,11 @@ func (s *Server) Listen(ctx context.Context) error {
 		sub, err = s.Conn.SubscribeSync(s.Subject)
 	} else {
 		sub, err = s.Conn.QueueSubscribeSync(s.Subject, s.Group)
+	}
+
+	// increase pending limits on the subscription to prevent slow consumer detection in high load scenarios
+	if err = sub.SetPendingLimits(s.PendingMsgsLimit, s.PendingBytesLimit); err != nil {
+		return err
 	}
 
 	if err != nil {
