@@ -67,7 +67,7 @@ func (s *Server) Listen(ctx context.Context) error {
 		sub, err = s.Conn.QueueSubscribeSync(s.Subject, s.Group)
 	}
 
-	// increase pending limits on the subscription to prevent slow consumer detection in high load scenarios
+	// set pending limits on the subscription to prevent slow consumer detection in high load scenarios
 	if err = sub.SetPendingLimits(s.PendingMsgsLimit, s.PendingBytesLimit); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (s *Server) Listen(ctx context.Context) error {
 func (s *Server) onMsg(msg *nats.Msg) error {
 	req := http.Request{}
 
-	if err := MsgToHttpRequest(msg, &req, s.Conn, s.maxMsgSize); err != nil {
+	if err := MsgToHttpRequest(msg, &req, s.Conn, s.maxMsgSize, s.PendingMsgsLimit, s.PendingBytesLimit); err != nil {
 		return err
 	}
 
@@ -111,7 +111,14 @@ func (s *Server) onMsg(msg *nats.Msg) error {
 	return writer.Close()
 }
 
-func MsgToHttpRequest(msg *nats.Msg, req *http.Request, conn *nats.Conn, maxMsgSize int) error {
+func MsgToHttpRequest(
+	msg *nats.Msg,
+	req *http.Request,
+	conn *nats.Conn,
+	maxMsgSize int,
+	pendingMsgsLimit int,
+	pendingBytesLimit int,
+) error {
 	req.Proto = "HTTP/1.1"
 	req.Method = msg.Header.Get(HeaderMethod)
 
@@ -168,6 +175,11 @@ func MsgToHttpRequest(msg *nats.Msg, req *http.Request, conn *nats.Conn, maxMsgS
 
 	sub, err := conn.SubscribeSync(chunkedInbox)
 	if err != nil {
+		return err
+	}
+
+	// set pending limits on the subscription to prevent slow consumer detection in high load scenarios
+	if err = sub.SetPendingLimits(pendingMsgsLimit, pendingBytesLimit); err != nil {
 		return err
 	}
 
