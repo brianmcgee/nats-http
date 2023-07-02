@@ -39,6 +39,7 @@
           deps = ["setup-datadir"];
           text = ''
             mkdir -p $NATS_HOME
+            rm -f "$NATS_HOME/nats.conf"
             cp ${config} "$NATS_HOME/nats.conf"
           '';
         };
