@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/juju/errors"
@@ -98,7 +97,7 @@ func (s *Server) Listen(ctx context.Context) error {
 func (s *Server) onMsg(msg *nats.Msg) error {
 	req := http.Request{}
 
-	if err := MsgToHttpRequest(msg, &req, s.Conn, s.maxMsgSize, s.PendingMsgsLimit, s.PendingBytesLimit); err != nil {
+	if err := s.msgToHttpRequest(msg, &req); err != nil {
 		return err
 	}
 
@@ -112,32 +111,12 @@ func (s *Server) onMsg(msg *nats.Msg) error {
 	return writer.Close()
 }
 
-func MsgToHttpRequest(
+func (s *Server) msgToHttpRequest(
 	msg *nats.Msg,
 	req *http.Request,
-	conn *nats.Conn,
-	maxMsgSize int,
-	pendingMsgsLimit int,
-	pendingBytesLimit int,
 ) error {
-	req.Proto = "HTTP/1.1"
-	req.Method = msg.Header.Get(HeaderMethod)
-
-	URL, err := url.Parse(msg.Header.Get(HeaderUrl))
-	if err != nil {
+	if err := MsgToRequest(s.Subject, msg, req); err != nil {
 		return err
-	}
-
-	req.URL = URL
-
-	// sanity check, do not blindly trust header
-	headerSubject, err := ReqToSubject(req)
-	if err != nil {
-		return err
-	}
-
-	if msg.Subject != headerSubject {
-		return errors.Errorf("natshttp: Msg.Subject '%s' does not match header extracted from URL header '%s'", msg.Subject, headerSubject)
 	}
 
 	// copy headers
@@ -169,7 +148,7 @@ func MsgToHttpRequest(
 	}
 
 	// determine if the request is chunked or not
-	chunked, err := IsChunkedRequest(msg, maxMsgSize)
+	chunked, err := IsChunkedRequest(msg, s.maxMsgSize)
 	if err != nil {
 		return err
 	}
@@ -182,22 +161,22 @@ func MsgToHttpRequest(
 
 	// otherwise we generate a unique inbox for this chunked transfer and send a message to the sender with the
 	// inbox for subsequent messages
-	chunkedInbox := conn.NewInbox()
+	chunkedInbox := s.Conn.NewInbox()
 
-	sub, err := conn.SubscribeSync(chunkedInbox)
+	sub, err := s.Conn.SubscribeSync(chunkedInbox)
 	if err != nil {
 		return err
 	}
 
 	// set pending limits on the subscription to prevent slow consumer detection in high load scenarios
-	if err = sub.SetPendingLimits(pendingMsgsLimit, pendingBytesLimit); err != nil {
+	if err = sub.SetPendingLimits(s.PendingMsgsLimit, s.PendingBytesLimit); err != nil {
 		return err
 	}
 
 	setupMsg := nats.NewMsg(msg.Reply)
 	setupMsg.Reply = chunkedInbox
 
-	if err = conn.PublishMsg(setupMsg); err != nil {
+	if err = s.Conn.PublishMsg(setupMsg); err != nil {
 		return err
 	}
 

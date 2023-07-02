@@ -2,10 +2,16 @@ package http
 
 import (
 	"fmt"
+	"github.com/nats-io/nats.go"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/juju/errors"
+)
+
+const (
+	HeaderPath = "X-Path"
 )
 
 type Result[T any] struct {
@@ -13,11 +19,15 @@ type Result[T any] struct {
 	Error error
 }
 
-func ReqToSubject(req *http.Request) (string, error) {
+func ReqToMsg(req *http.Request, msg *nats.Msg) error {
 	URL := req.URL
 	if URL.Scheme != UrlScheme {
-		return "", errors.Errorf("natshttp: url scheme must be '%s'", UrlScheme)
+		return errors.Errorf("natshttp: url scheme must be '%s'", UrlScheme)
 	}
+
+	// we can't reliably transform the subject back into the PATH as there could be paths like /foo.zst
+	// we add it explicitly as a header to avoid this problem
+	msg.Header.Set(HeaderPath, URL.Path)
 
 	path := strings.ReplaceAll(URL.Path, "/", ".")
 	if len(path) == 1 {
@@ -25,5 +35,37 @@ func ReqToSubject(req *http.Request) (string, error) {
 	}
 
 	// <host>.<path>.<method>
-	return fmt.Sprintf("%s%s.$%s", URL.Host, path, req.Method), nil
+	msg.Subject = fmt.Sprintf("%s%s.%s", URL.Host, path, req.Method)
+
+	return nil
+}
+
+func MsgToRequest(prefix string, msg *nats.Msg, req *http.Request) error {
+
+	subject := msg.Subject
+
+	if subject[:len(prefix)] != prefix {
+		return errors.Errorf("subject '%s' doesn't begin with prefix '%s'", subject, prefix)
+	}
+	components := strings.Split(subject[len(prefix):], ".")
+
+	// last component of the subject is the Http Method
+	method := components[len(components)-1]
+	switch method {
+	case http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace, http.MethodPatch:
+		req.Method = method
+	default:
+		return errors.Errorf("natshttp: invalid http method '%s' in subject '%s'", method, subject)
+	}
+
+	req.Proto = "HTTP/1.1"
+
+	// join all but the last component
+	req.URL = &url.URL{
+		Scheme: UrlScheme,
+		Host:   prefix,
+		Path:   msg.Header.Get(HeaderPath),
+	}
+
+	return nil
 }

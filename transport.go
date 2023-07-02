@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	HeaderUrl        = "X-Url"
-	HeaderMethod     = "X-Method"
 	HeaderStatus     = "X-Status"
 	HeaderStatusCode = "X-Status-Code"
 
@@ -232,16 +230,13 @@ func (t *Transport) httpRequestToMsgs(req *http.Request) (chan Result[*nats.Msg]
 		return nil, errors.New("natshttp: no Host in request URL")
 	}
 
-	subject, err := ReqToSubject(req)
-	if err != nil {
+	msg := nats.NewMsg("")
+
+	if err = ReqToMsg(req, msg); err != nil {
 		return nil, err
 	}
 
-	msg := nats.NewMsg(subject)
-
 	h := msg.Header
-	h.Set(HeaderUrl, req.URL.String())
-	h.Set(HeaderMethod, req.Method)
 
 	if len(req.TransferEncoding) > 0 {
 		h.Set(headers.TransferEncoding, strings.Join(req.TransferEncoding, ","))
