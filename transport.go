@@ -232,7 +232,12 @@ func (t *Transport) httpRequestToMsgs(req *http.Request) (chan Result[*nats.Msg]
 		return nil, errors.New("natshttp: no Host in request URL")
 	}
 
-	msg := nats.NewMsg(req.URL.Host)
+	subject, err := ReqToSubject(req)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := nats.NewMsg(subject)
 
 	h := msg.Header
 	h.Set(HeaderUrl, req.URL.String())

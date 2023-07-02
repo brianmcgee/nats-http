@@ -3,11 +3,12 @@ package http
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/juju/errors"
 
 	"github.com/go-http-utils/headers"
 
@@ -62,9 +63,9 @@ func (s *Server) Listen(ctx context.Context) error {
 	var sub *nats.Subscription
 
 	if s.Group == "" {
-		sub, err = s.Conn.SubscribeSync(s.Subject)
+		sub, err = s.Conn.SubscribeSync(s.Subject + ".>")
 	} else {
-		sub, err = s.Conn.QueueSubscribeSync(s.Subject, s.Group)
+		sub, err = s.Conn.QueueSubscribeSync(s.Subject+".>", s.Group)
 	}
 
 	// set pending limits on the subscription to prevent slow consumer detection in high load scenarios
@@ -128,6 +129,16 @@ func MsgToHttpRequest(
 	}
 
 	req.URL = URL
+
+	// sanity check, do not blindly trust header
+	headerSubject, err := ReqToSubject(req)
+	if err != nil {
+		return err
+	}
+
+	if msg.Subject != headerSubject {
+		return errors.Errorf("natshttp: Msg.Subject '%s' does not match header extracted from URL header '%s'", msg.Subject, headerSubject)
+	}
 
 	// copy headers
 	req.Header = make(http.Header)
