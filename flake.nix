@@ -29,12 +29,18 @@
     flake-parts,
     nixpkgs,
     ...
-  }:
+  }: let
+    lib = nixpkgs.lib.extend (final: _: import ./nix/lib.nix final);
+  in
     flake-parts.lib.mkFlake
     {
       inherit inputs;
+      specialArgs = {
+        inherit lib; # make custom lib available to top level functions
+      };
     } {
       imports = [
+        {_module.args.lib = lib;} # make custom lib available to perSystem functions
         ./nix
       ];
       systems = [
