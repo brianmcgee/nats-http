@@ -36,8 +36,14 @@ func ReqToMsg(req *http.Request, msg *nats.Msg) error {
 	// we can't reliably transform the subject back into the PATH as there could be paths like /foo.zst
 	// we add it explicitly as a header to avoid this problem
 	h.Set(HeaderPath, URL.Path)
-	h.Set(HeaderQuery, URL.RawQuery)
-	h.Set(HeaderFragment, URL.RawFragment)
+
+	if URL.RawQuery != "" {
+		h.Set(HeaderQuery, URL.RawQuery)
+	}
+
+	if URL.RawFragment != "" {
+		h.Set(HeaderFragment, URL.RawFragment)
+	}
 
 	path := strings.ReplaceAll(URL.Path, "/", ".")
 	if len(path) == 1 {
