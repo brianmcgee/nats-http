@@ -1,7 +1,11 @@
 package natshttp
 
 import (
+	"context"
+	"net"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats-server/v2/test"
@@ -28,4 +32,31 @@ func client(t *testing.T, s *server.Server, opts ...nats.Option) *nats.Conn {
 		t.Fatal(err)
 	}
 	return nc
+}
+
+func runProxy(t *testing.T, router chi.Router, listener net.Listener, conn *nats.Conn, group string, ctx context.Context) {
+	t.Helper()
+
+	srv := Server{
+		Conn:    conn,
+		Subject: subject,
+		Group:   group,
+		Handler: router,
+	}
+
+	go func() {
+		_ = srv.Listen(ctx)
+	}()
+
+	proxy := Proxy{
+		Subject: subject,
+		Transport: &Transport{
+			Conn: conn,
+		},
+		Listener: listener,
+	}
+
+	go func() {
+		_ = proxy.Listen(ctx)
+	}()
 }

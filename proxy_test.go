@@ -10,38 +10,59 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
+
+	"github.com/nats-io/nats.go"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-http-utils/headers"
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 )
 
-func runProxy(t *testing.T, router chi.Router, listener net.Listener, conn *nats.Conn, group string, ctx context.Context) {
-	t.Helper()
-
-	srv := Server{
-		Conn:    conn,
-		Subject: subject,
-		Group:   group,
-		Handler: router,
+func ExampleProxy_basic() {
+	// connect to NATS
+	conn, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		panic(err)
 	}
 
-	go func() {
-		_ = srv.Listen(ctx)
-	}()
+	// create a TCP listener
+	listener, err := net.Listen("tcp", "localhost:8080")
+	if err != nil {
+		panic(err)
+	}
 
+	// create a proxy which forwards requests to 'test.service.>' subject hierarchy
 	proxy := Proxy{
-		Subject: subject,
+		Subject:  "test.service",
+		Listener: listener,
 		Transport: &Transport{
 			Conn: conn,
 		},
-		Listener: listener,
 	}
 
-	go func() {
-		_ = proxy.Listen(ctx)
-	}()
+	// create a context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	eg := errgroup.Group{}
+
+	// start listening
+	eg.Go(func() error {
+		return proxy.Listen(ctx)
+	})
+
+	// wait 10 seconds then cancel the context
+	eg.Go(func() error {
+		<-time.After(10 * time.Second)
+		cancel()
+		return nil
+	})
+
+	// wait for the listener to complete
+	if err = eg.Wait(); err != nil {
+		panic(err)
+	}
 }
 
 func TestProxy_Head(t *testing.T) {
