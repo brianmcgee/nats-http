@@ -1,0 +1,21 @@
+name: "Continuous Integration"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    runs-on: 'ubuntu-20.04'
+    name: Nix Flake Check
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+      - name: Add Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v1
+      - name: Check flake
+        run: |
+          nix flake check
