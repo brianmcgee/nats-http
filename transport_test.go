@@ -1,9 +1,10 @@
 package natshttp
 
 import (
-	"github.com/nats-io/nats.go"
 	"io"
 	"net/http"
+
+	"github.com/nats-io/nats.go"
 )
 
 func ExampleTransport_basic() {

@@ -2,12 +2,13 @@ package natshttp
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
-	"github.com/nats-io/nats.go"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/nats-io/nats.go"
+	"golang.org/x/sync/errgroup"
 )
 
 func ExampleServer_basic() {
