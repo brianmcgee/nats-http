@@ -17,7 +17,7 @@ const (
 	HeaderFragment   = "X-Fragment"
 	HeaderStatus     = "X-Status"
 	HeaderStatusCode = "X-Status-Code"
-	UrlScheme        = "http+nats"
+	UrlScheme        = "nats+http"
 )
 
 type Result[T any] struct {

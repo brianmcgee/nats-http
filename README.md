@@ -1,11 +1,11 @@
 <h1 align="center"> 
   <br>
-  NATS Http
+  nats-http
   <br> 
 </h1>
 
-![Build](https://github.com/brianmcgee/nats.http/actions/workflows/ci.yaml/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/brianmcgee/nats.http/badge.svg)](https://coveralls.io/github/brianmcgee/nats.http)
+![Build](https://github.com/brianmcgee/nats-http/actions/workflows/ci.yaml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/brianmcgee/nats-http/badge.svg)](https://coveralls.io/github/brianmcgee/nats-http)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **Status: experimental**
@@ -32,9 +32,9 @@ client := http.Client{
 }
 
 // perform a get request against a NATS Http Server configured to listen on the 'foo.bar.>' subject hierarchy
-// it's important to use the 'http+nats' url scheme
+// it's important to use the 'nats+http' url scheme
 
-resp, err := client.Get("http+nats://foo.bar/hello/world")
+resp, err := client.Get("nats+http://foo.bar/hello/world")
 if err != nil {
     panic(err)
 }

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ErrInvalidUrl = errors.ConstError("natshttp: urls must of be of the form 'http+nats://a.valid.nats.subject/foo/bar?query=baz")
+	ErrInvalidUrl = errors.ConstError("natshttp: urls must of be of the form 'nats+http://a.valid.nats.subject/foo/bar?query=baz")
 )
 
 type Transport struct {

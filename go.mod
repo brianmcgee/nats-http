@@ -1,4 +1,4 @@
-module github.com/brianmcgee/nats.http
+module github.com/brianmcgee/nats+http
 
 go 1.20
 
