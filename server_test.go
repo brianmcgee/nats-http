@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func ExampleServer_Listen() {
+func ExampleServer_basic() {
 	// connect to NATS
 	conn, err := nats.Connect(nats.DefaultURL)
 	if err != nil {

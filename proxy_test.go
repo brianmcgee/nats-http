@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ExampleProxy_Listen() {
+func ExampleProxy_basic() {
 	// connect to NATS
 	conn, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
