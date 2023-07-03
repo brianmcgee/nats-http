@@ -2,10 +2,11 @@ package http
 
 import (
 	"fmt"
-	"github.com/nats-io/nats.go"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/nats-io/nats.go"
 
 	"github.com/juju/errors"
 )
@@ -41,7 +42,6 @@ func ReqToMsg(req *http.Request, msg *nats.Msg) error {
 }
 
 func MsgToRequest(prefix string, msg *nats.Msg, req *http.Request) error {
-
 	subject := msg.Subject
 
 	if subject[:len(prefix)] != prefix {

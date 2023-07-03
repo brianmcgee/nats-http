@@ -32,7 +32,6 @@
           [
             # golang
             pkgs.go
-            pkgs.go-tools
             pkgs.delve
             pkgs.golangci-lint
 
@@ -59,6 +58,11 @@
           category = "dev";
           name = "nats";
           package = pkgs.natscli;
+        }
+        {
+          inherit category;
+          name = "godoc";
+          command = "${pkgs.gotools}/bin/godoc $@";
         }
         {
           inherit category;
