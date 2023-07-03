@@ -22,9 +22,9 @@ func ExampleTransport_basic() {
 	}
 
 	// perform a get request against a NATS Http Server configured to listen on the 'foo.bar.>' subject hierarchy
-	// it's important to use the 'httpn' url scheme
+	// it's important to use the 'http+nats' url scheme
 
-	resp, err := client.Get("httpn://foo.bar/hello/world")
+	resp, err := client.Get("http+nats://foo.bar/hello/world")
 	if err != nil {
 		panic(err)
 	}

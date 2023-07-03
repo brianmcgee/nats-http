@@ -12,9 +12,12 @@ import (
 )
 
 const (
-	HeaderPath     = "X-Path"
-	HeaderQuery    = "X-Query"
-	HeaderFragment = "X-Fragment"
+	HeaderPath       = "X-Path"
+	HeaderQuery      = "X-Query"
+	HeaderFragment   = "X-Fragment"
+	HeaderStatus     = "X-Status"
+	HeaderStatusCode = "X-Status-Code"
+	UrlScheme        = "http+nats"
 )
 
 type Result[T any] struct {

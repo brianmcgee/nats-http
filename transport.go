@@ -13,12 +13,7 @@ import (
 )
 
 const (
-	HeaderStatus     = "X-Status"
-	HeaderStatusCode = "X-Status-Code"
-
-	UrlScheme = "httpn"
-
-	ErrInvalidUrl = errors.ConstError("natshttp: urls must of be of the form 'httpn://a.valid.nats.subject/foo/bar?query=baz")
+	ErrInvalidUrl = errors.ConstError("natshttp: urls must of be of the form 'http+nats://a.valid.nats.subject/foo/bar?query=baz")
 )
 
 type Transport struct {
