@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	HeaderPath = "X-Path"
+	HeaderPath     = "X-Path"
+	HeaderQuery    = "X-Query"
+	HeaderFragment = "X-Fragment"
 )
 
 type Result[T any] struct {
@@ -26,9 +28,13 @@ func ReqToMsg(req *http.Request, msg *nats.Msg) error {
 		return errors.Errorf("natshttp: url scheme must be '%s'", UrlScheme)
 	}
 
+	h := msg.Header
+
 	// we can't reliably transform the subject back into the PATH as there could be paths like /foo.zst
 	// we add it explicitly as a header to avoid this problem
-	msg.Header.Set(HeaderPath, URL.Path)
+	h.Set(HeaderPath, URL.Path)
+	h.Set(HeaderQuery, URL.RawQuery)
+	h.Set(HeaderFragment, URL.RawFragment)
 
 	path := strings.ReplaceAll(URL.Path, "/", ".")
 	if len(path) == 1 {
@@ -60,11 +66,15 @@ func MsgToRequest(prefix string, msg *nats.Msg, req *http.Request) error {
 
 	req.Proto = "HTTP/1.1"
 
+	h := msg.Header
+
 	// join all but the last component
 	req.URL = &url.URL{
-		Scheme: UrlScheme,
-		Host:   prefix,
-		Path:   msg.Header.Get(HeaderPath),
+		Scheme:      UrlScheme,
+		Host:        prefix,
+		Path:        h.Get(HeaderPath),
+		RawQuery:    h.Get(HeaderQuery),
+		RawFragment: h.Get(HeaderFragment),
 	}
 
 	return nil
