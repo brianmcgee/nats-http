@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ExampleProxy_basic() {
+func ExampleProxy_Listen() {
 	// connect to NATS
 	conn, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
@@ -42,9 +42,8 @@ func ExampleProxy_basic() {
 		},
 	}
 
-	// create a context
+	// create a context and an error group for running processes
 	ctx, cancel := context.WithCancel(context.Background())
-
 	eg := errgroup.Group{}
 
 	// start listening
